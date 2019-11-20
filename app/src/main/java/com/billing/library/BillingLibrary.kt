@@ -228,7 +228,7 @@ object BillingLibrary : CoroutineScope {
                     entry.value.forEach { listener ->
                         listener.onUpdated(status)
 
-                        logger.log("Billing Listener. ")
+                        logger.log("Billing Listener. The listener (${listener.hashCode()}) is triggered.")
                     }
                 }
             }
