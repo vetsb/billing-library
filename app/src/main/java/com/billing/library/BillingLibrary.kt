@@ -63,7 +63,7 @@ object BillingLibrary : CoroutineScope {
 
         (listeners[sku] ?: arrayListOf()).remove(listener)
 
-        logger.log("The listener (hashCode = ${listener.hashCode()}) is added to BillingLibrary by sku = $sku. There are ${listeners.values.flatten().size} listeners now.")
+        logger.log("addListenerBySku. The listener (hashCode = ${listener.hashCode()}) is added to BillingLibrary by sku = $sku. There are ${listeners.values.flatten().size} listeners now.")
     }
 
     fun removeListener(listener: PurchasesUpdatedListener) {
@@ -75,15 +75,7 @@ object BillingLibrary : CoroutineScope {
                 it.value.remove(listener)
             }
 
-        logger.log("The listener (hashCode = ${listener.hashCode()}) is removed from BillingLibrary. There are ${listeners.values.flatten().size} listeners now.")
-    }
-
-    fun hasPurchase(sku: String, callback: ((value: Boolean) -> Unit)) {
-        checkInitialization()
-
-        CoroutineScope(Dispatchers.Main).launch {
-            callback.invoke(hasPurchase(sku))
-        }
+        logger.log("removeListener. The listener (hashCode = ${listener.hashCode()}) is removed from BillingLibrary. There are ${listeners.values.flatten().size} listeners now.")
     }
 
     suspend fun hasPurchase(sku: String): Boolean {
@@ -94,7 +86,7 @@ object BillingLibrary : CoroutineScope {
             .firstOrNull { it.sku == sku }
 
         if (skuDetails == null) {
-            logger.log("SkuDetails with sku = $sku doesn't exist.")
+            logger.log("hasPurchase. SkuDetails with sku = $sku doesn't exist.")
 
             return false
         }
@@ -106,9 +98,9 @@ object BillingLibrary : CoroutineScope {
             ?: false
 
         val message = if (result) {
-            "SkuDetails with sku = $sku exists."
+            "hasPurchase. SkuDetails with sku = $sku exists."
         } else {
-            "SkuDetails with sku = $sku doesn't exist."
+            "hasPurchase. SkuDetails with sku = $sku doesn't exist."
         }
 
         logger.log(message)
@@ -116,7 +108,10 @@ object BillingLibrary : CoroutineScope {
         return result
     }
 
+    @Throws(RuntimeException::class)
     suspend fun startPurchaseFlow(activity: Activity?, sku: String) {
+        checkInitialization()
+
         logger.log("The purchase flow is started.")
 
         val skuDetails = skuDetailsListDeferred
@@ -124,29 +119,62 @@ object BillingLibrary : CoroutineScope {
             .firstOrNull { it.sku == sku }
 
         if (skuDetails == null) {
-            logger.log("SkuDetails with sku = $sku doesn't exist.")
+            logger.log("startPurchaseFlow. SkuDetails with sku = $sku doesn't exist.")
 
             return
+        } else {
+            logger.log("startPurchaseFlow. SkuDetails with sku = $sku exists.")
         }
 
         val params = BillingFlowParams.newBuilder()
             .setSkuDetails(skuDetails)
             .build()
 
-        globalBillingClient.launchBillingFlow(activity, params)
+        val billingResult = globalBillingClient.launchBillingFlow(activity, params)
+
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+            logger.log("startPurchaseFlow. The billing flow has launched successfully.")
+        } else {
+            val message = "startPurchaseFlow. The launching of the billing flow went wrong."
+
+            logger.log(message)
+
+            throw RuntimeException(message)
+        }
+    }
+
+    suspend fun getSkuDetails(sku: String): SkuDetails? {
+        checkInitialization()
+
+        val skuDetails = skuDetailsListDeferred.await()
+            .firstOrNull { it.sku == sku }
+
+        if (skuDetails == null) {
+            logger.log("getSkuDetails. SkuDetails with sku = $sku doesn't exist.")
+        } else {
+            logger.log("getSkuDetails. SkuDetails with sku = $sku exists.")
+        }
+
+        return skuDetails
     }
 
     private fun createGlobalBillingClient(application: Application) =
         BillingClient.newBuilder(application)
             .setListener { _, purchases ->
+                logger.log("Billing Listener is triggered.")
+
                 listeners.forEach { entry ->
                     val status = if (purchases?.any { it.sku == entry.key } == true)
                         PurchaseStatus.PURCHASED
                     else
                         PurchaseStatus.NOT_PURCHASED
 
+                    logger.log("Billing Listener. The purchase with sku = ${entry.key} has status = $status.")
+
                     entry.value.forEach { listener ->
                         listener.onUpdated(status)
+
+                        logger.log("Billing Listener. ")
                     }
                 }
             }
@@ -155,7 +183,9 @@ object BillingLibrary : CoroutineScope {
 
     private suspend fun startBillingConnection() = suspendCoroutine<Unit> { continuation ->
         globalBillingClient.startConnection(object : BillingClientStateListener {
-            override fun onBillingServiceDisconnected() {}
+            override fun onBillingServiceDisconnected() {
+                logger.log("The Billing Client disconnected.")
+            }
 
             override fun onBillingSetupFinished(billingResult: BillingResult?) {
                 if (billingResult?.responseCode == BillingClient.BillingResponseCode.OK) {
