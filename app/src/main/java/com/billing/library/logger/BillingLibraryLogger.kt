@@ -1,6 +1,7 @@
-package com.billing.library
+package com.billing.library.logger
 
 import android.util.Log
+import com.billing.library.BuildConfig
 
 class BillingLibraryLogger {
 

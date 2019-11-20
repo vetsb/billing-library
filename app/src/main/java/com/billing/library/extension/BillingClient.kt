@@ -1,4 +1,4 @@
-package com.billing.library
+package com.billing.library.extension
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.SkuDetails

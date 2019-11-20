@@ -1,4 +1,4 @@
-package com.billing.library
+package com.billing.library.constant
 
 enum class PurchaseStatus {
 
