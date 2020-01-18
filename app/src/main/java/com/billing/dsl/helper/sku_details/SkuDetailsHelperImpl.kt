@@ -4,6 +4,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.SkuDetails
 import com.billing.dsl.extension.getInAppSkuDetails
 import com.billing.dsl.extension.getSubscriptionSkuDetails
+import com.billing.dsl.helper.purchase_flow.waitNotNullAndGet
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -14,23 +15,19 @@ internal class SkuDetailsHelperImpl : SkuDetailsHelper {
 
     override var billingClient: BillingClient? = null
 
-    override var isLoggingEnabled = false
-
     override suspend fun fetchSkuDetails(skuList: List<String>) {
-        if (billingClient == null) {
-            return
-        }
+        val client = waitNotNullAndGet(billingClient) ?: return
 
         coroutineScope {
             skuDetailsListDeferred = async {
                 val skuListCopy = ArrayList(skuList)
 
-                val inAppSkuDetailsList = billingClient!!.getInAppSkuDetails(skuListCopy)
+                val inAppSkuDetailsList = client.getInAppSkuDetails(skuListCopy)
                 val inAppSkuList = inAppSkuDetailsList.map { it.sku }
 
                 skuListCopy.removeAll(inAppSkuList)
 
-                val subsSkuDetailsList = billingClient!!.getSubscriptionSkuDetails(skuListCopy)
+                val subsSkuDetailsList = client.getSubscriptionSkuDetails(skuListCopy)
 
                 (inAppSkuDetailsList + subsSkuDetailsList).distinctBy { it.sku }
             }
@@ -38,10 +35,8 @@ internal class SkuDetailsHelperImpl : SkuDetailsHelper {
     }
 
     override suspend fun getSkuDetails(): List<SkuDetails> {
-        if (skuDetailsListDeferred == null) {
-            return listOf()
-        }
+        val deferred = waitNotNullAndGet(skuDetailsListDeferred) ?: return listOf()
 
-        return skuDetailsListDeferred!!.await()
+        return deferred.await()
     }
 }

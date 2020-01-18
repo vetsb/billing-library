@@ -6,15 +6,10 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.billing.dsl.data.ConnectionResult
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-internal class InitializationHelperImpl : InitializationHelper, CoroutineScope {
-
-    override val coroutineContext = Job() + Dispatchers.IO
+internal class InitializationHelperImpl : InitializationHelper {
 
     override var billingClient: BillingClient? = null
 

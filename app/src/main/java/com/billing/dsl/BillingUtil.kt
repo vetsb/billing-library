@@ -14,10 +14,7 @@ import com.billing.dsl.helper.purchases.PurchasesHelperImpl
 import com.billing.dsl.helper.sku_details.SkuDetailsHelper
 import com.billing.dsl.helper.sku_details.SkuDetailsHelperImpl
 import com.billing.dsl.logger.Logger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 object BillingUtil : CoroutineScope {
 
@@ -76,7 +73,11 @@ object BillingUtil : CoroutineScope {
         launch {
             initializationHelper.addListener(purchaseFlowHelper)
 
-            val connectionResult = initializationHelper.initialize(configuration.context)
+            val connectionResult = withContext(Dispatchers.Main) {
+                initializationHelper.initialize(configuration.context)
+            }
+
+            Logger.log("connectionResult $connectionResult")
 
             if (connectionResult == ConnectionResult.FAILURE) {
                 return@launch
@@ -108,11 +109,15 @@ object BillingUtil : CoroutineScope {
         activity: Activity,
         sku: String
     ): PurchaseFlowResult {
-        val skuDetails = skuDetailsHelper.getSkuDetails()
-            .firstOrNull { it.sku == sku }
-            ?: return PurchaseFlowResult.ERROR
+        val skuDetails = withContext(Dispatchers.IO) {
+            skuDetailsHelper
+                .getSkuDetails()
+                .firstOrNull { it.sku == sku }
+        } ?: return PurchaseFlowResult.ERROR
 
-        return purchaseFlowHelper.startPurchaseFlowAndGetResult(activity, skuDetails)
+        return withContext(Dispatchers.Main) {
+            purchaseFlowHelper.startPurchaseFlowAndGetResult(activity, skuDetails)
+        }
     }
 
     suspend fun getSkuDetails(sku: String): SkuDetails? {

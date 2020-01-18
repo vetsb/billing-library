@@ -9,6 +9,23 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
+internal inline fun <reified T> waitNotNullAndGet(obj: T?): T? {
+    val timeoutMillis = 5000
+    val startTime = System.currentTimeMillis()
+
+    while (obj == null) {
+        val currentTime = System.currentTimeMillis()
+
+        if (currentTime - startTime >= timeoutMillis) {
+            break
+        } else {
+            continue
+        }
+    }
+
+    return obj
+}
+
 class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
 
     override val coroutineContext = Job() + Dispatchers.IO
@@ -23,15 +40,13 @@ class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
         activity: Activity,
         skuDetails: SkuDetails
     ): PurchaseFlowResult {
-        if (billingClient == null) {
-            return PurchaseFlowResult.ERROR
-        }
+        val client = waitNotNullAndGet(billingClient) ?: return PurchaseFlowResult.ERROR
 
         val params = BillingFlowParams.newBuilder()
             .setSkuDetails(skuDetails)
             .build()
 
-        billingClient!!.launchBillingFlow(activity, params)
+        client.launchBillingFlow(activity, params)
 
         return channel.receive()
     }
