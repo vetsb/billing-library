@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.billing.dsl.data.ResponseCode
+import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.helper.initialization.InitializationHelper
 import com.billing.dsl.helper.initialization.InitializationHelperImpl
 import com.billing.dsl.helper.purchase_flow.PurchaseFlowHelper
@@ -115,9 +115,7 @@ object BillingUtil : CoroutineScope {
         activity: Activity,
         sku: String
     ): ResponseCode {
-        val skuDetails = skuDetailsHelper
-            .getSkuDetailsList()
-            .firstOrNull { it.sku == sku }
+        val skuDetails = skuDetailsHelper.getSkuDetails(sku)
             ?: return ResponseCode.ERROR
 
         return purchaseFlowHelper.startPurchaseFlowAndGetResult(activity, skuDetails)

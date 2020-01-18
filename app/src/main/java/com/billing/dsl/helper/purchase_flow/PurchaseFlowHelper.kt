@@ -4,7 +4,7 @@ import android.app.Activity
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
-import com.billing.dsl.data.ResponseCode
+import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.helper.billing.BillingHelper
 
 internal interface PurchaseFlowHelper : BillingHelper, PurchasesUpdatedListener {

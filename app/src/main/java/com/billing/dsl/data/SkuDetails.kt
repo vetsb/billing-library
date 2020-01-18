@@ -1,8 +1,12 @@
 package com.billing.dsl.data
 
+import com.billing.dsl.constant.FreeTrialPeriod
+import com.billing.dsl.constant.SkuType
+import com.billing.dsl.constant.SubscriptionPeriod
+
 data class SkuDetails(
     val description: String?,
-    val freeTrialPeriod: String?,
+    val freeTrialPeriod: FreeTrialPeriod?,
     val iconUrl: String?,
 
     val introductoryPrice: String?,
@@ -19,8 +23,8 @@ data class SkuDetails(
     val priceCurrencyCode: String?,
 
     val sku: String?,
-    val subscriptionPeriod: String?,
+    val subscriptionPeriod: SubscriptionPeriod?,
     val title: String?,
-    val type: String?,
+    val type: SkuType?,
     val isRewarded: Boolean?
 )

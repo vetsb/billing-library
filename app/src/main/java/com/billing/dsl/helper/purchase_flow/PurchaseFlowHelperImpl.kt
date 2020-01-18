@@ -2,7 +2,7 @@ package com.billing.dsl.helper.purchase_flow
 
 import android.app.Activity
 import com.android.billingclient.api.*
-import com.billing.dsl.data.ResponseCode
+import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.vendor.ObjectConverter
 import com.billing.dsl.vendor.waitUntil
 import kotlinx.coroutines.CoroutineScope

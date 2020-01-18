@@ -1,4 +1,4 @@
-package com.billing.dsl.data
+package com.billing.dsl.constant
 
 enum class ResponseCode {
 

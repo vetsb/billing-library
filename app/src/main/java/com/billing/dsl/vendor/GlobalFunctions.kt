@@ -3,7 +3,7 @@ package com.billing.dsl.vendor
 internal fun waitUntil(
     require: () -> Boolean
 ): Boolean {
-    val timeoutMillis = 1000
+    val timeoutMillis = 5000
     val startTime = System.currentTimeMillis()
 
     while (!require()) {

@@ -1,7 +1,7 @@
 package com.billing.dsl.vendor
 
 import com.android.billingclient.api.BillingClient.BillingResponseCode.*
-import com.billing.dsl.data.ResponseCode
+import com.billing.dsl.constant.ResponseCode
 
 internal object ObjectConverter {
 

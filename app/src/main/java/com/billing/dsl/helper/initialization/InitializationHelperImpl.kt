@@ -5,7 +5,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.billing.dsl.data.ResponseCode
+import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.vendor.ObjectConverter
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
