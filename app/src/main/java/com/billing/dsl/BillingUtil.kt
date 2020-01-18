@@ -77,8 +77,6 @@ object BillingUtil : CoroutineScope {
                 initializationHelper.initialize(configuration.context)
             }
 
-            Logger.log("connectionResult $connectionResult")
-
             if (connectionResult == ConnectionResult.FAILURE) {
                 return@launch
             }
