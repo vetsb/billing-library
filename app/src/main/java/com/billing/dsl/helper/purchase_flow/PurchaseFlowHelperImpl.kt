@@ -2,29 +2,14 @@ package com.billing.dsl.helper.purchase_flow
 
 import android.app.Activity
 import com.android.billingclient.api.*
-import com.billing.dsl.data.PurchaseFlowResult
+import com.billing.dsl.data.ResponseCode
+import com.billing.dsl.vendor.ObjectConverter
+import com.billing.dsl.vendor.waitUntil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-
-internal inline fun <reified T> waitNotNullAndGet(obj: T?): T? {
-    val timeoutMillis = 5000
-    val startTime = System.currentTimeMillis()
-
-    while (obj == null) {
-        val currentTime = System.currentTimeMillis()
-
-        if (currentTime - startTime >= timeoutMillis) {
-            break
-        } else {
-            continue
-        }
-    }
-
-    return obj
-}
 
 class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
 
@@ -32,21 +17,25 @@ class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
 
     override var billingClient: BillingClient? = null
 
-    private val channel = Channel<PurchaseFlowResult>(1)
+    private val channel = Channel<ResponseCode>(1)
 
     private var currentFlowSku: String? = null
 
     override suspend fun startPurchaseFlowAndGetResult(
         activity: Activity,
         skuDetails: SkuDetails
-    ): PurchaseFlowResult {
-        val client = waitNotNullAndGet(billingClient) ?: return PurchaseFlowResult.ERROR
+    ): ResponseCode {
+        if (!waitUntil { billingClient != null }) {
+            return ResponseCode.ERROR
+        }
 
         val params = BillingFlowParams.newBuilder()
             .setSkuDetails(skuDetails)
             .build()
 
-        client.launchBillingFlow(activity, params)
+        currentFlowSku = skuDetails.sku
+
+        billingClient!!.launchBillingFlow(activity, params)
 
         return channel.receive()
     }
@@ -56,40 +45,45 @@ class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
         purchases: MutableList<Purchase>?
     ) {
         launch {
-            when (billingResult?.responseCode) {
-                BillingClient.BillingResponseCode.OK -> {
-                    if (purchases == null || purchases.isEmpty()) {
-                        channel.send(PurchaseFlowResult.ERROR)
+            val responseCode = ObjectConverter.toLibraryResponseCode(
+                billingResult?.responseCode
+            )
 
-                        return@launch
-                    }
+            if (responseCode == ResponseCode.OK) {
+                if (purchases == null || purchases.isEmpty()) {
+                    channel.send(ResponseCode.ITEM_NOT_OWNED)
 
-                    val purchase = purchases.firstOrNull { it.sku == currentFlowSku }
+                    currentFlowSku = null
 
-                    if (purchase == null) {
-                        channel.send(PurchaseFlowResult.ERROR)
-
-                        return@launch
-                    }
-
-                    verifyPurchase(purchase)
-
-                    channel.send(PurchaseFlowResult.SUCCESS)
+                    return@launch
                 }
-                BillingClient.BillingResponseCode.USER_CANCELED -> {
-                    channel.send(PurchaseFlowResult.CANCELLED)
+
+                val purchase = purchases.firstOrNull { it.sku == currentFlowSku }
+
+                if (purchase == null) {
+                    channel.send(ResponseCode.ITEM_NOT_OWNED)
+
+                    currentFlowSku = null
+
+                    return@launch
                 }
-                BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
-                    channel.send(PurchaseFlowResult.ALREADY_HAVE)
-                }
-                else -> {
-                    channel.send(PurchaseFlowResult.ERROR)
-                }
+
+                verifyPurchase(purchase)
             }
+
+            currentFlowSku = null
+
+            channel.send(responseCode)
         }
     }
 
     override suspend fun verifyPurchase(purchase: Purchase) {
+        waitUntil { billingClient != null }
+
+        if (billingClient == null) {
+            return
+        }
+
         if (purchase.isAcknowledged) {
             return
         }
@@ -98,6 +92,6 @@ class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
             .setPurchaseToken(purchase.purchaseToken)
             .build()
 
-        billingClient?.acknowledgePurchase(params)
+        billingClient!!.acknowledgePurchase(params)
     }
 }

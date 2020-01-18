@@ -5,7 +5,8 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.billing.dsl.data.ConnectionResult
+import com.billing.dsl.data.ResponseCode
+import com.billing.dsl.vendor.ObjectConverter
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -20,7 +21,7 @@ internal class InitializationHelperImpl : InitializationHelper {
     }
 
     override suspend fun initialize(context: Context) =
-        suspendCoroutine<ConnectionResult> { continuation ->
+        suspendCoroutine<ResponseCode> { continuation ->
             billingClient = BillingClient.newBuilder(context.applicationContext)
                 .setListener { billingResult, purchases ->
                     listeners.forEach {
@@ -36,12 +37,11 @@ internal class InitializationHelperImpl : InitializationHelper {
                 }
 
                 override fun onBillingSetupFinished(result: BillingResult?) {
-                    val connectionResult = when (result?.responseCode) {
-                        BillingClient.BillingResponseCode.OK -> ConnectionResult.SUCCESS
-                        else -> ConnectionResult.FAILURE
-                    }
-
-                    continuation.resume(connectionResult)
+                    continuation.resume(
+                        ObjectConverter.toLibraryResponseCode(
+                            result?.responseCode
+                        )
+                    )
                 }
             })
 

@@ -7,5 +7,9 @@ internal interface SkuDetailsHelper : BillingHelper {
 
     suspend fun fetchSkuDetails(skuList: List<String>)
 
-    suspend fun getSkuDetails(): List<SkuDetails>
+    suspend fun getSkuDetails(sku: String): SkuDetails?
+
+    suspend fun getSkuDetailsList(): List<SkuDetails>
+
+    suspend fun getSkuList(): List<String>
 }

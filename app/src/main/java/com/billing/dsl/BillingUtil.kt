@@ -2,9 +2,9 @@ package com.billing.dsl
 
 import android.app.Activity
 import android.content.Context
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.billing.dsl.data.ConnectionResult
-import com.billing.dsl.data.PurchaseFlowResult
+import com.billing.dsl.data.ResponseCode
 import com.billing.dsl.helper.initialization.InitializationHelper
 import com.billing.dsl.helper.initialization.InitializationHelperImpl
 import com.billing.dsl.helper.purchase_flow.PurchaseFlowHelper
@@ -14,7 +14,12 @@ import com.billing.dsl.helper.purchases.PurchasesHelperImpl
 import com.billing.dsl.helper.sku_details.SkuDetailsHelper
 import com.billing.dsl.helper.sku_details.SkuDetailsHelperImpl
 import com.billing.dsl.logger.Logger
-import kotlinx.coroutines.*
+import com.billing.dsl.vendor.toLibraryInstance
+import com.billing.dsl.vendor.waitUntil
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 object BillingUtil : CoroutineScope {
 
@@ -70,29 +75,24 @@ object BillingUtil : CoroutineScope {
 
         Logger.isEnabled = configuration.isLoggingEnabled
 
-        launch {
+        launch(Dispatchers.Main) {
             initializationHelper.addListener(purchaseFlowHelper)
 
-            val connectionResult = withContext(Dispatchers.Main) {
-                initializationHelper.initialize(configuration.context)
-            }
+            val connectionResult = initializationHelper.initialize(configuration.context)
 
-            if (connectionResult == ConnectionResult.FAILURE) {
-                return@launch
+            Logger.log(
+                when (connectionResult) {
+                    ResponseCode.OK -> "Billing Client is connected"
+                    else -> "Billing Client isn't connected. Error = ${connectionResult.name}"
+                }
+            )
+
+            listOf(skuDetailsHelper, purchaseFlowHelper, purchasesHelper).forEach {
+                it.billingClient = initializationHelper.billingClient
             }
 
             skuDetailsHelper.run {
-                billingClient = initializationHelper.billingClient
-
                 fetchSkuDetails(configuration.skuList)
-            }
-
-            purchaseFlowHelper.run {
-                billingClient = initializationHelper.billingClient
-            }
-
-            purchasesHelper.run {
-                billingClient = initializationHelper.billingClient
             }
         }
 
@@ -100,26 +100,42 @@ object BillingUtil : CoroutineScope {
     }
 
     fun hasPurchase(sku: String): Boolean {
+        waitUntil { initializationHelper.billingClient != null && initializationHelper.billingClient?.isReady == false }
+
         return purchasesHelper.hasPurchase(sku)
+    }
+
+    suspend fun getSkuList(): List<String> {
+        waitUntil { initializationHelper.billingClient != null && initializationHelper.billingClient?.isReady == false }
+
+        return skuDetailsHelper.getSkuList()
     }
 
     suspend fun startPurchaseFlowAndGetResult(
         activity: Activity,
         sku: String
-    ): PurchaseFlowResult {
-        val skuDetails = withContext(Dispatchers.IO) {
-            skuDetailsHelper
-                .getSkuDetails()
-                .firstOrNull { it.sku == sku }
-        } ?: return PurchaseFlowResult.ERROR
+    ): ResponseCode {
+        val skuDetails = skuDetailsHelper
+            .getSkuDetailsList()
+            .firstOrNull { it.sku == sku }
+            ?: return ResponseCode.ERROR
 
-        return withContext(Dispatchers.Main) {
-            purchaseFlowHelper.startPurchaseFlowAndGetResult(activity, skuDetails)
-        }
+        return purchaseFlowHelper.startPurchaseFlowAndGetResult(activity, skuDetails)
     }
 
-    suspend fun getSkuDetails(sku: String): SkuDetails? {
-        return skuDetailsHelper.getSkuDetails()
-            .firstOrNull { it.sku == sku }
+    fun getOriginalPurchase(sku: String): Purchase? {
+        return purchasesHelper.getPurchase(sku)
+    }
+
+    fun getPurchase(sku: String): com.billing.dsl.data.Purchase? {
+        return getOriginalPurchase(sku)?.toLibraryInstance()
+    }
+
+    suspend fun getOriginalSkuDetails(sku: String): SkuDetails? {
+        return skuDetailsHelper.getSkuDetails(sku)
+    }
+
+    suspend fun getSkuDetails(sku: String): com.billing.dsl.data.SkuDetails? {
+        return getOriginalSkuDetails(sku)?.toLibraryInstance()
     }
 }

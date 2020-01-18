@@ -3,8 +3,8 @@ package com.billing.library
 import android.app.Activity
 import android.app.Application
 import com.android.billingclient.api.*
-import com.billing.dsl.extension.getInAppSkuDetails
-import com.billing.dsl.extension.getSubscriptionSkuDetails
+import com.billing.dsl.vendor.getInAppSkuDetails
+import com.billing.dsl.vendor.getSubscriptionSkuDetails
 import com.billing.library.constant.ProductType
 import com.billing.library.constant.PurchaseStatus
 import com.billing.library.listener.PurchaseStatusUpdatedListener
@@ -204,9 +204,9 @@ object BillingLibrary : CoroutineScope {
             .firstOrNull { it.sku == sku }
 
         if (skuDetails == null) {
-            logger.log("getSkuDetails. SkuDetails with sku = $sku doesn't exist.")
+            logger.log("getSkuDetailsList. SkuDetails with sku = $sku doesn't exist.")
         } else {
-            logger.log("getSkuDetails. SkuDetails with sku = $sku exists.")
+            logger.log("getSkuDetailsList. SkuDetails with sku = $sku exists.")
         }
 
         return skuDetails

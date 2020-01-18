@@ -5,10 +5,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.billing.dsl.BillingUtil
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity(), CoroutineScope {
 
@@ -17,6 +14,8 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        updatePurchaseStatuses()
 
         btnStartPurchaseFlow.run {
             setOnClickListener {
@@ -27,6 +26,27 @@ class MainActivity : AppCompatActivity(), CoroutineScope {
                     )
 
                     Toast.makeText(this@MainActivity, "$result", Toast.LENGTH_LONG).show()
+
+                    updatePurchaseStatuses()
+                }
+            }
+        }
+    }
+
+    private fun updatePurchaseStatuses() {
+        tvPurchaseStatuses.run {
+            launch(Dispatchers.IO) {
+                val sb = StringBuilder()
+
+                BillingUtil.getSkuList().map {
+                    sb.append(it)
+                    sb.append(" = ")
+                    sb.append(BillingUtil.hasPurchase(it))
+                    sb.append("\n")
+                }
+
+                withContext(Dispatchers.Main) {
+                    text = sb.toString()
                 }
             }
         }
