@@ -1,4 +1,4 @@
-package com.billing.library.extension
+package com.billing.dsl.extension
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.SkuDetails
@@ -6,7 +6,7 @@ import com.android.billingclient.api.SkuDetailsParams
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-suspend fun BillingClient.getInAppSkuDetails(skuList: List<String>) =
+internal suspend fun BillingClient.getInAppSkuDetails(skuList: List<String>) =
     suspendCoroutine<List<SkuDetails>> { continuation ->
         val params = SkuDetailsParams.newBuilder()
             .setSkusList(skuList)
@@ -18,7 +18,7 @@ suspend fun BillingClient.getInAppSkuDetails(skuList: List<String>) =
         }
     }
 
-suspend fun BillingClient.getSubscriptionSkuDetails(skuList: List<String>) =
+internal suspend fun BillingClient.getSubscriptionSkuDetails(skuList: List<String>) =
     suspendCoroutine<List<SkuDetails>> { continuation ->
         val params = SkuDetailsParams.newBuilder()
             .setSkusList(skuList)

@@ -3,10 +3,10 @@ package com.billing.library
 import android.app.Activity
 import android.app.Application
 import com.android.billingclient.api.*
+import com.billing.dsl.extension.getInAppSkuDetails
+import com.billing.dsl.extension.getSubscriptionSkuDetails
 import com.billing.library.constant.ProductType
 import com.billing.library.constant.PurchaseStatus
-import com.billing.library.extension.getInAppSkuDetails
-import com.billing.library.extension.getSubscriptionSkuDetails
 import com.billing.library.listener.PurchaseStatusUpdatedListener
 import com.billing.library.logger.BillingLibraryLogger
 import kotlinx.coroutines.*
@@ -146,8 +146,7 @@ object BillingLibrary : CoroutineScope {
         }
 
         val result = globalBillingClient
-            .queryPurchases(skuDetails.type)
-            ?.purchasesList
+            .queryPurchases(skuDetails.type).purchasesList
             ?.any { it.sku == sku }
             ?: false
 
@@ -173,11 +172,11 @@ object BillingLibrary : CoroutineScope {
             .firstOrNull { it.sku == sku }
 
         if (skuDetails == null) {
-            logger.log("startPurchaseFlow. SkuDetails with sku = $sku doesn't exist.")
+            logger.log("startPurchaseFlowAndGetResult. SkuDetails with sku = $sku doesn't exist.")
 
             return
         } else {
-            logger.log("startPurchaseFlow. SkuDetails with sku = $sku exists.")
+            logger.log("startPurchaseFlowAndGetResult. SkuDetails with sku = $sku exists.")
         }
 
         val params = BillingFlowParams.newBuilder()
@@ -187,9 +186,10 @@ object BillingLibrary : CoroutineScope {
         val billingResult = globalBillingClient.launchBillingFlow(activity, params)
 
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            logger.log("startPurchaseFlow. The billing flow has launched successfully.")
+            logger.log("startPurchaseFlowAndGetResult. The billing flow has launched successfully.")
         } else {
-            val message = "startPurchaseFlow. The launching of the billing flow went wrong."
+            val message =
+                "startPurchaseFlowAndGetResult. The launching of the billing flow went wrong."
 
             logger.log(message)
 
