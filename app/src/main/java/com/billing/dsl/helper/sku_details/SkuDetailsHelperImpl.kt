@@ -41,9 +41,7 @@ internal class SkuDetailsHelperImpl : SkuDetailsHelper {
     }
 
     override suspend fun getSkuDetailsList(): List<SkuDetails> {
-        waitUntil { skuDetailsListDeferred != null }
-
-        if (skuDetailsListDeferred == null) {
+        if (!waitUntil { skuDetailsListDeferred != null }) {
             return listOf()
         }
 
@@ -51,9 +49,7 @@ internal class SkuDetailsHelperImpl : SkuDetailsHelper {
     }
 
     override suspend fun getSkuList(): List<String> {
-        waitUntil { skuDetailsListDeferred != null }
-
-        if (skuDetailsListDeferred == null) {
+        if (!waitUntil { skuDetailsListDeferred != null }) {
             return listOf()
         }
 

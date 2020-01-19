@@ -9,13 +9,17 @@ internal class PurchasesHelperImpl : PurchasesHelper {
     override var billingClient: BillingClient? = null
 
     override fun hasPurchase(sku: String): Boolean {
-        waitUntil { billingClient != null }
+        if (!waitUntil { billingClient != null }) {
+            return false
+        }
 
         return getPurchases().any { it.sku == sku }
     }
 
     override fun getPurchases(): List<Purchase> {
-        waitUntil { billingClient != null }
+        if (!waitUntil { billingClient != null }) {
+            return listOf()
+        }
 
         val inApps = billingClient!!.queryPurchases(BillingClient.SkuType.INAPP)
         val subscriptions = billingClient!!.queryPurchases(BillingClient.SkuType.SUBS)
@@ -24,7 +28,9 @@ internal class PurchasesHelperImpl : PurchasesHelper {
     }
 
     override fun getPurchase(sku: String): Purchase? {
-        waitUntil { billingClient != null }
+        if (!waitUntil { billingClient != null }) {
+            return null
+        }
 
         return getPurchases()
             .firstOrNull { it.sku == sku }

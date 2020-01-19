@@ -3,6 +3,7 @@ package com.billing.dsl.helper.purchase_flow
 import android.app.Activity
 import com.android.billingclient.api.*
 import com.billing.dsl.constant.ResponseCode
+import com.billing.dsl.helper.purchase_verifying.PurchaseVerifyingHelper
 import com.billing.dsl.vendor.ObjectConverter
 import com.billing.dsl.vendor.waitUntil
 import kotlinx.coroutines.CoroutineScope
@@ -11,13 +12,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
-class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
+internal class PurchaseFlowHelperImpl(
+    private val purchaseVerifyingHelper: PurchaseVerifyingHelper
+) : PurchaseFlowHelper, CoroutineScope {
 
     override val coroutineContext = Job() + Dispatchers.IO
 
     override var billingClient: BillingClient? = null
 
-    private val channel = Channel<ResponseCode>(1)
+    private var flowChannel: Channel<ResponseCode>? = null
 
     private var currentFlowSku: String? = null
 
@@ -35,9 +38,11 @@ class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
 
         currentFlowSku = skuDetails.sku
 
+        flowChannel = Channel(1)
+
         billingClient!!.launchBillingFlow(activity, params)
 
-        return channel.receive()
+        return flowChannel!!.receive()
     }
 
     override fun onPurchasesUpdated(
@@ -51,9 +56,7 @@ class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
 
             if (responseCode == ResponseCode.OK) {
                 if (purchases == null || purchases.isEmpty()) {
-                    channel.send(ResponseCode.ITEM_NOT_OWNED)
-
-                    currentFlowSku = null
+                    finishPurchaseHandling(ResponseCode.ITEM_NOT_OWNED)
 
                     return@launch
                 }
@@ -61,37 +64,21 @@ class PurchaseFlowHelperImpl : PurchaseFlowHelper, CoroutineScope {
                 val purchase = purchases.firstOrNull { it.sku == currentFlowSku }
 
                 if (purchase == null) {
-                    channel.send(ResponseCode.ITEM_NOT_OWNED)
-
-                    currentFlowSku = null
+                    finishPurchaseHandling(ResponseCode.ITEM_NOT_OWNED)
 
                     return@launch
                 }
 
-                verifyPurchase(purchase)
+                purchaseVerifyingHelper.verify(purchase)
             }
 
-            currentFlowSku = null
-
-            channel.send(responseCode)
+            finishPurchaseHandling(responseCode)
         }
     }
 
-    override suspend fun verifyPurchase(purchase: Purchase) {
-        waitUntil { billingClient != null }
+    private suspend fun finishPurchaseHandling(responseCode: ResponseCode) {
+        currentFlowSku = null
 
-        if (billingClient == null) {
-            return
-        }
-
-        if (purchase.isAcknowledged) {
-            return
-        }
-
-        val params = AcknowledgePurchaseParams.newBuilder()
-            .setPurchaseToken(purchase.purchaseToken)
-            .build()
-
-        billingClient!!.acknowledgePurchase(params)
+        flowChannel?.send(responseCode)
     }
 }

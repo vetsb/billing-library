@@ -9,6 +9,8 @@ import com.billing.dsl.helper.initialization.InitializationHelper
 import com.billing.dsl.helper.initialization.InitializationHelperImpl
 import com.billing.dsl.helper.purchase_flow.PurchaseFlowHelper
 import com.billing.dsl.helper.purchase_flow.PurchaseFlowHelperImpl
+import com.billing.dsl.helper.purchase_verifying.PurchaseVerifyingHelper
+import com.billing.dsl.helper.purchase_verifying.PurchaseVerifyingHelperImpl
 import com.billing.dsl.helper.purchases.PurchasesHelper
 import com.billing.dsl.helper.purchases.PurchasesHelperImpl
 import com.billing.dsl.helper.sku_details.SkuDetailsHelper
@@ -33,8 +35,12 @@ object BillingUtil : CoroutineScope {
         SkuDetailsHelperImpl()
     }
 
+    private val purchaseVerifyingHelper: PurchaseVerifyingHelper by lazy {
+        PurchaseVerifyingHelperImpl(skuDetailsHelper)
+    }
+
     private val purchaseFlowHelper: PurchaseFlowHelper by lazy {
-        PurchaseFlowHelperImpl()
+        PurchaseFlowHelperImpl(purchaseVerifyingHelper)
     }
 
     private val purchasesHelper: PurchasesHelper by lazy {
@@ -99,12 +105,6 @@ object BillingUtil : CoroutineScope {
         isInitialized = true
     }
 
-    fun hasPurchase(sku: String): Boolean {
-        waitUntil { initializationHelper.billingClient != null && initializationHelper.billingClient?.isReady == false }
-
-        return purchasesHelper.hasPurchase(sku)
-    }
-
     suspend fun getSkuList(): List<String> {
         waitUntil { initializationHelper.billingClient != null && initializationHelper.billingClient?.isReady == false }
 
@@ -121,12 +121,19 @@ object BillingUtil : CoroutineScope {
         return purchaseFlowHelper.startPurchaseFlowAndGetResult(activity, skuDetails)
     }
 
-    fun getOriginalPurchase(sku: String): Purchase? {
-        return purchasesHelper.getPurchase(sku)
+    fun hasPurchase(sku: String): Boolean {
+        waitUntil { initializationHelper.billingClient != null && initializationHelper.billingClient?.isReady == false }
+
+        return purchasesHelper.hasPurchase(sku)
     }
 
-    fun getPurchase(sku: String): com.billing.dsl.data.Purchase? {
-        return getOriginalPurchase(sku)?.toLibraryInstance()
+    fun getOriginalPurchases(): List<Purchase> {
+        return purchasesHelper.getPurchases()
+    }
+
+    fun getPurchases(): List<com.billing.dsl.data.Purchase> {
+        return getOriginalPurchases()
+            .map { it.toLibraryInstance() }
     }
 
     suspend fun getOriginalSkuDetails(sku: String): SkuDetails? {
