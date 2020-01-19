@@ -3,6 +3,10 @@ package com.billing.dsl.vendor
 internal fun waitUntil(
     require: () -> Boolean
 ): Boolean {
+    if (require()) {
+        return true
+    }
+
     val timeoutMillis = 5000
     val startTime = System.currentTimeMillis()
 
