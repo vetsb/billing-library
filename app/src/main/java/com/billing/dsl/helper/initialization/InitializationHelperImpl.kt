@@ -27,7 +27,10 @@ internal class InitializationHelperImpl : InitializationHelper {
 
             billingClient = BillingClient.newBuilder(context.applicationContext)
                 .setListener { billingResult, purchases ->
-                    Logger.log("BillingClient received callback with responseCode = ${billingResult.responseCode} and purchases = $purchases")
+                    val responseCode =
+                        ObjectConverter.toLibraryResponseCode(billingResult?.responseCode)
+
+                    Logger.log("BillingClient received callback with responseCode = $responseCode and purchases = $purchases")
 
                     listeners.forEach {
                         it.onPurchasesUpdated(billingResult, purchases)
@@ -42,7 +45,9 @@ internal class InitializationHelperImpl : InitializationHelper {
                 }
 
                 override fun onBillingSetupFinished(result: BillingResult?) {
-                    Logger.log("BillingClient finished setup with responseCode = ${result?.responseCode}")
+                    val responseCode = ObjectConverter.toLibraryResponseCode(result?.responseCode)
+
+                    Logger.log("BillingClient finished setup with responseCode = $responseCode")
 
                     continuation.resume(
                         ObjectConverter.toLibraryResponseCode(

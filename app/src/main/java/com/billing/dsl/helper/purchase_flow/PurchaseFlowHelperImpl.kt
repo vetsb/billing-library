@@ -8,6 +8,7 @@ import com.android.billingclient.api.Purchase
 import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.helper.purchase_verifying.PurchaseVerifyingHelper
 import com.billing.dsl.helper.sku_details.SkuDetailsHelper
+import com.billing.dsl.logger.Logger
 import com.billing.dsl.vendor.ObjectConverter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +35,15 @@ internal class PurchaseFlowHelperImpl(
         activity: Activity,
         sku: String
     ): ResponseCode {
-        val skuDetails = skuDetailsHelper.getSkuDetails(sku) ?: return ResponseCode.ERROR
+        Logger.log("PurchaseFlow. Started")
+
+        val skuDetails = skuDetailsHelper.getSkuDetails(sku)
+
+        if (skuDetails == null) {
+            Logger.log("PurchaseFlow. Failed. SkuDetails is null")
+
+            return ResponseCode.ERROR
+        }
 
         currentFlowSku = skuDetails.sku
 
@@ -43,6 +52,8 @@ internal class PurchaseFlowHelperImpl(
         val params = BillingFlowParams.newBuilder()
             .setSkuDetails(skuDetails)
             .build()
+
+        Logger.log("PurchaseFlow. Dialog is opened")
 
         billingClient!!.launchBillingFlow(activity, params)
 
@@ -58,8 +69,12 @@ internal class PurchaseFlowHelperImpl(
                 billingResult?.responseCode
             )
 
+            Logger.log("PurchaseFlow. Received callback with responseCode = $responseCode and purchases = $purchases")
+
             if (responseCode == ResponseCode.OK) {
                 if (purchases == null || purchases.isEmpty()) {
+                    Logger.log("PurchaseFlow. Failed. Purchases is empty")
+
                     finishPurchaseHandling(ResponseCode.ITEM_NOT_OWNED)
 
                     return@launch
@@ -68,6 +83,8 @@ internal class PurchaseFlowHelperImpl(
                 val purchase = purchases.firstOrNull { it.sku == currentFlowSku }
 
                 if (purchase == null) {
+                    Logger.log("PurchaseFlow. Failed. Purchase with sku = $currentFlowSku is null")
+
                     finishPurchaseHandling(ResponseCode.ITEM_NOT_OWNED)
 
                     return@launch
@@ -79,6 +96,8 @@ internal class PurchaseFlowHelperImpl(
                     }
                 }
             }
+
+            Logger.log("PurchaseFlow. ResponseCode = $responseCode")
 
             finishPurchaseHandling(responseCode)
         }
