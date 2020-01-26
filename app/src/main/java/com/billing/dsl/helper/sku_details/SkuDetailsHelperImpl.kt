@@ -2,6 +2,7 @@ package com.billing.dsl.helper.sku_details
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.SkuDetails
+import com.billing.dsl.logger.Logger
 import com.billing.dsl.vendor.getInAppSkuDetails
 import com.billing.dsl.vendor.getSubscriptionSkuDetails
 import com.billing.dsl.vendor.waitUntil
@@ -30,7 +31,17 @@ internal class SkuDetailsHelperImpl : SkuDetailsHelper, CoroutineScope {
 
             val subsSkuDetailsList = billingClient!!.getSubscriptionSkuDetails(skuListCopy)
 
-            (inAppSkuDetailsList + subsSkuDetailsList).distinctBy { it.sku }
+            val result = (inAppSkuDetailsList + subsSkuDetailsList).distinctBy { it.sku }
+
+            Logger.log("SkuDetails is fetched. Start list")
+
+            result.forEachIndexed { index, item ->
+                Logger.log("SkuDetails is fetched. ${index + 1}. $item")
+            }
+
+            Logger.log("SkuDetails is fetched. End list")
+
+            result
         }
     }
 
