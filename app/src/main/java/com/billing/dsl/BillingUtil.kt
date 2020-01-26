@@ -2,7 +2,6 @@ package com.billing.dsl
 
 import android.app.Activity
 import android.content.Context
-import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.helper.initialization.InitializationHelper
 import com.billing.dsl.helper.initialization.InitializationHelperImpl
 import com.billing.dsl.helper.purchase_flow.PurchaseFlowHelper
@@ -97,15 +96,7 @@ object BillingUtil : CoroutineScope {
 
         launch(Dispatchers.Main) {
             initializationHelper.addListener(purchaseFlowHelper)
-
-            val connectionResult = initializationHelper.initialize(configuration.context)
-
-            Logger.log(
-                when (connectionResult) {
-                    ResponseCode.OK -> "Billing Client is connected"
-                    else -> "Billing Client isn't connected. Error = ${connectionResult.name}"
-                }
-            )
+            initializationHelper.initialize(configuration.context)
 
             listOf(
                 skuDetailsHelper,

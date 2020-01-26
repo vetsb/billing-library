@@ -6,6 +6,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.billing.dsl.constant.ResponseCode
+import com.billing.dsl.logger.Logger
 import com.billing.dsl.vendor.ObjectConverter
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -22,8 +23,12 @@ internal class InitializationHelperImpl : InitializationHelper {
 
     override suspend fun initialize(context: Context) =
         suspendCoroutine<ResponseCode> { continuation ->
+            Logger.log("BillingClient started initialization")
+
             billingClient = BillingClient.newBuilder(context.applicationContext)
                 .setListener { billingResult, purchases ->
+                    Logger.log("BillingClient received callback with responseCode = ${billingResult.responseCode} and purchases = $purchases")
+
                     listeners.forEach {
                         it.onPurchasesUpdated(billingResult, purchases)
                     }
@@ -33,10 +38,12 @@ internal class InitializationHelperImpl : InitializationHelper {
 
             billingClient?.startConnection(object : BillingClientStateListener {
                 override fun onBillingServiceDisconnected() {
-
+                    Logger.log("BillingClient disconnected")
                 }
 
                 override fun onBillingSetupFinished(result: BillingResult?) {
+                    Logger.log("BillingClient finished setup with responseCode = ${result?.responseCode}")
+
                     continuation.resume(
                         ObjectConverter.toLibraryResponseCode(
                             result?.responseCode
