@@ -1,13 +1,18 @@
-apply plugin: "com.android.library"
+apply plugin: "com.android.application"
 
 apply plugin: "kotlin-android"
+
+apply plugin: "kotlin-android-extensions"
 
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
     defaultConfig {
+        applicationId "com.billing.sample"
         minSdkVersion 21
         targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
     }
     buildTypes {
         release {
@@ -15,13 +20,17 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
+
 }
 
 dependencies {
+    implementation project(":app")
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.60"
 
-    implementation "com.android.billingclient:billing:2.1.0"
-    implementation "com.android.billingclient:billing-ktx:2.1.0"
+    implementation "androidx.appcompat:appcompat:1.1.0"
+    implementation "androidx.core:core-ktx:1.1.0"
+    implementation "androidx.constraintlayout:constraintlayout:1.1.3"
 
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.2"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2"
