@@ -1,11 +1,14 @@
 package com.billing.dsl.helper.purchase_flow
 
 import android.app.Activity
-import com.android.billingclient.api.*
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.Purchase
 import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.helper.purchase_verifying.PurchaseVerifyingHelper
+import com.billing.dsl.helper.sku_details.SkuDetailsHelper
 import com.billing.dsl.vendor.ObjectConverter
-import com.billing.dsl.vendor.waitUntil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,8 +16,11 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 internal class PurchaseFlowHelperImpl(
-    private val purchaseVerifyingHelper: PurchaseVerifyingHelper
+    private val purchaseVerifyingHelper: PurchaseVerifyingHelper,
+    private val skuDetailsHelper: SkuDetailsHelper
 ) : PurchaseFlowHelper, CoroutineScope {
+
+    override var isAcknowledgeEnabled = true
 
     override val coroutineContext = Job() + Dispatchers.IO
 
@@ -26,19 +32,17 @@ internal class PurchaseFlowHelperImpl(
 
     override suspend fun startPurchaseFlowAndGetResult(
         activity: Activity,
-        skuDetails: SkuDetails
+        sku: String
     ): ResponseCode {
-        if (!waitUntil { billingClient != null }) {
-            return ResponseCode.ERROR
-        }
-
-        val params = BillingFlowParams.newBuilder()
-            .setSkuDetails(skuDetails)
-            .build()
+        val skuDetails = skuDetailsHelper.getSkuDetails(sku) ?: return ResponseCode.ERROR
 
         currentFlowSku = skuDetails.sku
 
         flowChannel = Channel(1)
+
+        val params = BillingFlowParams.newBuilder()
+            .setSkuDetails(skuDetails)
+            .build()
 
         billingClient!!.launchBillingFlow(activity, params)
 
@@ -69,7 +73,11 @@ internal class PurchaseFlowHelperImpl(
                     return@launch
                 }
 
-                purchaseVerifyingHelper.verify(purchase)
+                launch {
+                    if (isAcknowledgeEnabled) {
+                        purchaseVerifyingHelper.verify(purchase)
+                    }
+                }
             }
 
             finishPurchaseHandling(responseCode)

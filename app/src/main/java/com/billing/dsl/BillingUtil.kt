@@ -2,8 +2,6 @@ package com.billing.dsl
 
 import android.app.Activity
 import android.content.Context
-import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.SkuDetails
 import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.helper.initialization.InitializationHelper
 import com.billing.dsl.helper.initialization.InitializationHelperImpl
@@ -17,7 +15,6 @@ import com.billing.dsl.helper.sku_details.SkuDetailsHelper
 import com.billing.dsl.helper.sku_details.SkuDetailsHelperImpl
 import com.billing.dsl.logger.Logger
 import com.billing.dsl.vendor.toLibraryInstance
-import com.billing.dsl.vendor.waitUntil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,7 +37,7 @@ object BillingUtil : CoroutineScope {
     }
 
     private val purchaseFlowHelper: PurchaseFlowHelper by lazy {
-        PurchaseFlowHelperImpl(purchaseVerifyingHelper)
+        PurchaseFlowHelperImpl(purchaseVerifyingHelper, skuDetailsHelper)
     }
 
     private val purchasesHelper: PurchasesHelper by lazy {
@@ -55,10 +52,18 @@ object BillingUtil : CoroutineScope {
 
         internal var skuList = arrayListOf<String>()
 
-        internal var isLoggingEnabled = false
+        internal var isLoggingEnabled: Boolean? = null
+
+        internal var isAcknowledgeEnabled: Boolean? = null
 
         fun setLoggingEnabled(value: Boolean): Configuration {
             isLoggingEnabled = value
+
+            return this
+        }
+
+        fun setAcknowledgeEnabled(value: Boolean): Configuration {
+            isAcknowledgeEnabled = value
 
             return this
         }
@@ -76,10 +81,19 @@ object BillingUtil : CoroutineScope {
         }
     }
 
+    @Throws(IllegalStateException::class)
     fun initialize(configuration: Configuration) {
         check(!isInitialized) { "BillingUtil has been initialized already" }
 
-        Logger.isEnabled = configuration.isLoggingEnabled
+        configuration.run {
+            isLoggingEnabled?.let {
+                Logger.isEnabled = it
+            }
+
+            isAcknowledgeEnabled?.let {
+                purchaseFlowHelper.isAcknowledgeEnabled = it
+            }
+        }
 
         launch(Dispatchers.Main) {
             initializationHelper.addListener(purchaseFlowHelper)
@@ -93,7 +107,11 @@ object BillingUtil : CoroutineScope {
                 }
             )
 
-            listOf(skuDetailsHelper, purchaseFlowHelper, purchasesHelper).forEach {
+            listOf(
+                skuDetailsHelper,
+                purchaseFlowHelper,
+                purchasesHelper
+            ).forEach {
                 it.billingClient = initializationHelper.billingClient
             }
 
@@ -105,42 +123,20 @@ object BillingUtil : CoroutineScope {
         isInitialized = true
     }
 
-    suspend fun getSkuList(): List<String> {
-        waitUntil { initializationHelper.billingClient != null && initializationHelper.billingClient?.isReady == false }
-
-        return skuDetailsHelper.getSkuList()
-    }
+    fun getSkuList() = skuDetailsHelper.getSkuList()
 
     suspend fun startPurchaseFlowAndGetResult(
         activity: Activity,
         sku: String
-    ): ResponseCode {
-        val skuDetails = skuDetailsHelper.getSkuDetails(sku)
-            ?: return ResponseCode.ERROR
+    ) = purchaseFlowHelper.startPurchaseFlowAndGetResult(activity, sku)
 
-        return purchaseFlowHelper.startPurchaseFlowAndGetResult(activity, skuDetails)
-    }
+    fun hasPurchase(sku: String) = purchasesHelper.hasPurchase(sku)
 
-    fun hasPurchase(sku: String): Boolean {
-        waitUntil { initializationHelper.billingClient != null && initializationHelper.billingClient?.isReady == false }
+    fun getOriginalPurchases() = purchasesHelper.getPurchases()
 
-        return purchasesHelper.hasPurchase(sku)
-    }
+    fun getPurchases() = getOriginalPurchases().map { it.toLibraryInstance() }
 
-    fun getOriginalPurchases(): List<Purchase> {
-        return purchasesHelper.getPurchases()
-    }
+    suspend fun getOriginalSkuDetails(sku: String) = skuDetailsHelper.getSkuDetails(sku)
 
-    fun getPurchases(): List<com.billing.dsl.data.Purchase> {
-        return getOriginalPurchases()
-            .map { it.toLibraryInstance() }
-    }
-
-    suspend fun getOriginalSkuDetails(sku: String): SkuDetails? {
-        return skuDetailsHelper.getSkuDetails(sku)
-    }
-
-    suspend fun getSkuDetails(sku: String): com.billing.dsl.data.SkuDetails? {
-        return getOriginalSkuDetails(sku)?.toLibraryInstance()
-    }
+    suspend fun getSkuDetails(sku: String) = getOriginalSkuDetails(sku)?.toLibraryInstance()
 }

@@ -11,6 +11,7 @@ class App : Application() {
         val configuration = BillingUtil.Configuration(this)
             .addSku("android.test.purchased")
             .setLoggingEnabled(true)
+            .setAcknowledgeEnabled(true)
 
         BillingUtil.initialize(configuration)
     }

@@ -5,11 +5,11 @@ import com.android.billingclient.api.SkuDetails
 import com.billing.dsl.vendor.getInAppSkuDetails
 import com.billing.dsl.vendor.getSubscriptionSkuDetails
 import com.billing.dsl.vendor.waitUntil
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 
-internal class SkuDetailsHelperImpl : SkuDetailsHelper {
+internal class SkuDetailsHelperImpl : SkuDetailsHelper, CoroutineScope {
+
+    override val coroutineContext = Job() + Dispatchers.IO
 
     private var skuDetailsListDeferred: Deferred<List<SkuDetails>>? = null
 
@@ -17,22 +17,20 @@ internal class SkuDetailsHelperImpl : SkuDetailsHelper {
 
     override var billingClient: BillingClient? = null
 
-    override suspend fun fetchSkuDetails(skuList: List<String>) {
-        coroutineScope {
-            skuDetailsListDeferred = async {
-                initialSkuList = ArrayList(skuList)
+    override fun fetchSkuDetails(skuList: List<String>) {
+        skuDetailsListDeferred = async {
+            initialSkuList = ArrayList(skuList)
 
-                val skuListCopy = ArrayList(skuList)
+            val skuListCopy = ArrayList(skuList)
 
-                val inAppSkuDetailsList = billingClient!!.getInAppSkuDetails(skuListCopy)
-                val inAppSkuList = inAppSkuDetailsList.map { it.sku }
+            val inAppSkuDetailsList = billingClient!!.getInAppSkuDetails(skuListCopy)
+            val inAppSkuList = inAppSkuDetailsList.map { it.sku }
 
-                skuListCopy.removeAll(inAppSkuList)
+            skuListCopy.removeAll(inAppSkuList)
 
-                val subsSkuDetailsList = billingClient!!.getSubscriptionSkuDetails(skuListCopy)
+            val subsSkuDetailsList = billingClient!!.getSubscriptionSkuDetails(skuListCopy)
 
-                (inAppSkuDetailsList + subsSkuDetailsList).distinctBy { it.sku }
-            }
+            (inAppSkuDetailsList + subsSkuDetailsList).distinctBy { it.sku }
         }
     }
 
@@ -48,11 +46,11 @@ internal class SkuDetailsHelperImpl : SkuDetailsHelper {
         return skuDetailsListDeferred!!.await()
     }
 
-    override suspend fun getSkuList(): List<String> {
-        if (!waitUntil { skuDetailsListDeferred != null }) {
+    override fun getSkuList(): List<String> {
+        if (!waitUntil { initialSkuList != null }) {
             return listOf()
         }
 
-        return skuDetailsListDeferred!!.await().map { it.sku }
+        return initialSkuList!!
     }
 }
