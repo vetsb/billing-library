@@ -101,7 +101,8 @@ object BillingUtil : CoroutineScope {
             listOf(
                 skuDetailsHelper,
                 purchaseFlowHelper,
-                purchasesHelper
+                purchasesHelper,
+                purchaseVerifyingHelper
             ).forEach {
                 it.billingClient = initializationHelper.billingClient
             }
