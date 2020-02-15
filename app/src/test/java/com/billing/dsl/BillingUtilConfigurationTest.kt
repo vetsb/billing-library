@@ -21,19 +21,19 @@ class BillingUtilConfigurationTest {
     }
 
     @Test
-    fun whenNotSetLoggingEnabled_LoggingEnabledMustBeNull() {
+    fun whenNotSettingLoggingEnabled_LoggingEnabledMustBeNull() {
         assertTrue(configuration.isLoggingEnabled == null)
     }
 
     @Test
-    fun whenSetLoggingEnabled_False_LoggingEnabledMustBeTrue() {
+    fun whenSettingLoggingEnabled_False_LoggingEnabledMustBeTrue() {
         configuration.setLoggingEnabled(false)
 
         assertTrue(configuration.isLoggingEnabled == false)
     }
 
     @Test
-    fun whenSetLoggingEnabled_True_LoggingEnabledMustBeTrue() {
+    fun whenSettingLoggingEnabled_True_LoggingEnabledMustBeTrue() {
         configuration.setLoggingEnabled(true)
 
         assertTrue(configuration.isLoggingEnabled == true)
