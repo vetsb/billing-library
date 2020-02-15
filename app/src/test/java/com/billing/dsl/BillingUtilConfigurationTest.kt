@@ -38,4 +38,24 @@ class BillingUtilConfigurationTest {
 
         assertTrue(configuration.isLoggingEnabled == true)
     }
+
+
+    @Test
+    fun whenNotSettingAcknowledgeEnabled_AcknowledgeEnabledMustBeNull() {
+        assertTrue(configuration.isAcknowledgeEnabled == null)
+    }
+
+    @Test
+    fun whenSettingAcknowledgeEnabled_False_AcknowledgeEnabledMustBeTrue() {
+        configuration.setAcknowledgeEnabled(false)
+
+        assertTrue(configuration.isAcknowledgeEnabled == false)
+    }
+
+    @Test
+    fun whenSettingAcknowledgeEnabled_True_AcknowledgeEnabledMustBeTrue() {
+        configuration.setAcknowledgeEnabled(true)
+
+        assertTrue(configuration.isAcknowledgeEnabled == true)
+    }
 }
