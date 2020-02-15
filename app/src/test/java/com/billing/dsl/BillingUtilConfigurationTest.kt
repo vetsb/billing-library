@@ -3,6 +3,7 @@ package com.billing.dsl
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -19,6 +20,13 @@ class BillingUtilConfigurationTest {
     @Before
     fun setUp() {
         configuration = BillingUtil.Configuration(getApplicationContext())
+    }
+
+    @Test
+    fun whenSettingLoggingEnabled_MustReturnConfigurationInstance() {
+        val result = configuration.setLoggingEnabled(false)
+
+        assertEquals(result, configuration)
     }
 
     @Test
@@ -42,6 +50,13 @@ class BillingUtilConfigurationTest {
 
 
     @Test
+    fun whenSettingAcknowledgeEnabled_MustReturnConfigurationInstance() {
+        val result = configuration.setAcknowledgeEnabled(false)
+
+        assertEquals(result, configuration)
+    }
+
+    @Test
     fun whenNotSettingAcknowledgeEnabled_AcknowledgeEnabledMustBeNull() {
         assertTrue(configuration.isAcknowledgeEnabled == null)
     }
@@ -62,6 +77,13 @@ class BillingUtilConfigurationTest {
 
 
     @Test
+    fun whenAddingSku_MustReturnConfigurationInstance() {
+        val result = configuration.addSku("")
+
+        assertEquals(result, configuration)
+    }
+
+    @Test
     fun whenAddingSku_NotEmpty_InternalListMustContainIt() {
         configuration.addSku("NEW SKU")
 
@@ -73,6 +95,13 @@ class BillingUtilConfigurationTest {
         configuration.addSku("")
 
         assertThat(configuration.skuList).doesNotContain("")
+    }
+
+    @Test
+    fun whenAddingSkuList_MustReturnConfigurationInstance() {
+        val result = configuration.addSkuList(listOf())
+
+        assertEquals(result, configuration)
     }
 
     @Test
