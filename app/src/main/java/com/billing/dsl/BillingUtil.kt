@@ -68,13 +68,17 @@ object BillingUtil : CoroutineScope {
         }
 
         fun addSku(sku: String): Configuration {
-            skuList.add(sku)
+            if (sku.isNotEmpty()) {
+                skuList.add(sku)
+            }
 
             return this
         }
 
         fun addSkuList(list: List<String>): Configuration {
-            skuList.addAll(list)
+            list.forEach {
+                addSku(it)
+            }
 
             return this
         }
