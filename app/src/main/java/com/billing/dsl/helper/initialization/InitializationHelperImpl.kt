@@ -15,7 +15,7 @@ internal class InitializationHelperImpl : InitializationHelper {
 
     override var billingClient: BillingClient? = null
 
-    private val listeners = arrayListOf<PurchasesUpdatedListener>()
+    internal val listeners = arrayListOf<PurchasesUpdatedListener>()
 
     override fun addListener(listener: PurchasesUpdatedListener) {
         listeners.add(listener)
