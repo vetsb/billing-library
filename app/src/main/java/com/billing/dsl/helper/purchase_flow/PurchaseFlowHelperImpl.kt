@@ -9,7 +9,6 @@ import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.helper.purchase_verifying.PurchaseVerifyingHelper
 import com.billing.dsl.helper.sku_details.SkuDetailsHelper
 import com.billing.dsl.logger.Logger
-import com.billing.dsl.vendor.ObjectConverter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -65,9 +64,7 @@ internal class PurchaseFlowHelperImpl(
         purchases: MutableList<Purchase>?
     ) {
         launch {
-            val responseCode = ObjectConverter.toLibraryResponseCode(
-                billingResult?.responseCode
-            )
+            val responseCode = ResponseCode.fromGoogleResponseCode(billingResult?.responseCode)
 
             Logger.log("PurchaseFlow. Received callback with responseCode = $responseCode and purchases = $purchases")
 

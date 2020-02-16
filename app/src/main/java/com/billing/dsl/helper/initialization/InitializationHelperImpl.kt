@@ -7,7 +7,6 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.billing.dsl.constant.ResponseCode
 import com.billing.dsl.logger.Logger
-import com.billing.dsl.vendor.ObjectConverter
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -27,8 +26,9 @@ internal class InitializationHelperImpl : InitializationHelper {
 
             billingClient = BillingClient.newBuilder(context.applicationContext)
                 .setListener { billingResult, purchases ->
-                    val responseCode =
-                        ObjectConverter.toLibraryResponseCode(billingResult?.responseCode)
+                    val responseCode = ResponseCode.fromGoogleResponseCode(
+                        billingResult?.responseCode
+                    )
 
                     Logger.log("BillingClient received callback with responseCode = $responseCode and purchases = $purchases")
 
@@ -45,15 +45,11 @@ internal class InitializationHelperImpl : InitializationHelper {
                 }
 
                 override fun onBillingSetupFinished(result: BillingResult?) {
-                    val responseCode = ObjectConverter.toLibraryResponseCode(result?.responseCode)
+                    val responseCode = ResponseCode.fromGoogleResponseCode(result?.responseCode)
 
                     Logger.log("BillingClient finished setup with responseCode = $responseCode")
 
-                    continuation.resume(
-                        ObjectConverter.toLibraryResponseCode(
-                            result?.responseCode
-                        )
-                    )
+                    continuation.resume(responseCode)
                 }
             })
 
