@@ -2,6 +2,8 @@ package com.billing.dsl
 
 import android.app.Activity
 import android.content.Context
+import com.billing.dsl.data.Purchase
+import com.billing.dsl.data.SkuDetails
 import com.billing.dsl.helper.initialization.InitializationHelper
 import com.billing.dsl.helper.initialization.InitializationHelperImpl
 import com.billing.dsl.helper.purchase_flow.PurchaseFlowHelper
@@ -13,7 +15,6 @@ import com.billing.dsl.helper.purchases.PurchasesHelperImpl
 import com.billing.dsl.helper.sku_details.SkuDetailsHelper
 import com.billing.dsl.helper.sku_details.SkuDetailsHelperImpl
 import com.billing.dsl.logger.Logger
-import com.billing.dsl.vendor.toLibraryInstance
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -130,9 +131,10 @@ object BillingUtil : CoroutineScope {
 
     fun getOriginalPurchases() = purchasesHelper.getPurchases()
 
-    fun getPurchases() = getOriginalPurchases().map { it.toLibraryInstance() }
+    fun getPurchases() = getOriginalPurchases().map { Purchase.fromGooglePurchase(it) }
 
     suspend fun getOriginalSkuDetails(sku: String) = skuDetailsHelper.getSkuDetails(sku)
 
-    suspend fun getSkuDetails(sku: String) = getOriginalSkuDetails(sku)?.toLibraryInstance()
+    suspend fun getSkuDetails(sku: String) =
+        SkuDetails.fromGoogleSkuDetails(getOriginalSkuDetails(sku))
 }
